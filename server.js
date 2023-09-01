@@ -1,26 +1,37 @@
 const express = require("express");
 const { buildSchema } = require("graphql");
 const { graphqlHTTP } = require("express-graphql");
+const { makeExecutableSchema } = require("@graphql-tools/schema");
+const { loadFilesSync } = require("@graphql-tools/load-files");
+const path = require("path");
 const http = require("http");
 
 const app = express();
 
-const schema = buildSchema(`
-    type Query {
-        description:String
-        price:Float
-    }
-`);
-const root = {
-  description: "Iphone 11",
-  price: 499999,
-};
+// const root = {
+//   products: require("./products/products.model.js"),
+//   orders: require("./orders/orders.model.js"),
+// };
 
-app.use("/graphql", graphqlHTTP({
-  schema: schema,
-  rootValue:root,
-  graphiql:true
-}));
+const typeArray = loadFilesSync("**/*", {
+  extensions: ["graphql"],
+});
+const resolverArray = loadFilesSync("**/*", {
+  extensions: ["resolver.js"],
+});
+const schema = makeExecutableSchema({
+  typeDefs: typeArray,
+  resolvers: resolverArray
+});
+
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: schema,
+    // rootValue: root,
+    graphiql: true,
+  })
+);
 
 function startServer() {
   const server = http.createServer(app);
